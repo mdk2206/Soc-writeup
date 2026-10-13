@@ -42,4 +42,64 @@ Các công cụ sử dụng trong bài: FTK Imager, Notepad++, grep, awk.
 
 **Đáp án:** `444`
 
-### Câu 4: 
+### Câu 4: What is the SHA256 of the botnet agent file?
+
+- Từ script `.remove.sh` ở câu 1, mình biết `kinsing` và `kdevtmp...` là các file miner đã bị xử lý. Botnet agent là một thành phần khác nên không nằm trong danh sách này.
+- Mình tìm kiếm theo đường dẫn var/tmp thì thấy 1 file khá lạ có tên dk86
+- Sau đó mình dùng powershell để tính hash và gửi lên virustotal để phân tích thì kết quả cho ra đúng đây chính là một file mã độc
+
+<img width="1227" height="157" alt="image" src="https://github.com/user-attachments/assets/dad800f1-13cd-49d9-8f9f-89d547501ae3" />
+
+<img width="1906" height="911" alt="image" src="https://github.com/user-attachments/assets/7572b250-ae05-47f1-b02f-425eaae154f7" />
+
+** Đáp án: ** ` 0E574FD30E806FE4298B3CBCCB8D1089454F42F52892F87554325CB352646049 `
+
+### Câu 5: What is the name of the botnet in Q4?
+
+- Mình cũng tiếp tục sử dụng dữ liệu trên Virustoral và thấy file được nhiều engine gán nhãn thuộc họ ` Tsunami `
+
+<img width="1877" height="565" alt="image" src="https://github.com/user-attachments/assets/8bd7ab48-0dca-4c27-98db-28509c80c1cf" />
+
+
+### Câu 6: What IP address matches the creation timestamp of the botnet agent file in Q4?
+
+- Trong FTK Imager, thời gian tạo file `dk86` trong /var/tmp là 2021-11-11 19:09:51.
+- Sau đó mình mở nhật kí Web ở đường dẫn  /var/log/apache2 vào thời điểm 2021-11-11 19:09:51 và phát hiện 1 địa chỉ IP `141.135.85.36`
+
+<img width="1832" height="31" alt="image" src="https://github.com/user-attachments/assets/c90e656e-a09d-4c2e-a803-859c1b366fbd" />
+
+** Đáp án: ** ` 141.135.85.36 `
+
+### Câu 7: What URL did the attacker use to download the botnet agent?
+
+- Cũng tiếp tục trong nhật kí của Apache và phát hiện kẻ tấn công dùng nhiều lệnh `wget ` để tải file. Mình tìm đến lệnh wget đầu tiên và phát hiện được URL là ` http://138.197.206.223:80/wp-content/themes/twentysixteen/dk86`
+
+<img width="1847" height="51" alt="image" src="https://github.com/user-attachments/assets/02de5434-4ae2-423d-befd-677078ad4c4f" />
+
+**Đáp án:** `http://138.197.206.223:80/wp-content/themes/twentysixteen/dk86`
+
+### Câu 8: What is the name of the file that the attacker downloaded to execute the malicious script and subsequently remove itself?
+
+- Ở câu này mình sẽ tiếp tục phân tích nhật ký lỗi của Apache (`error.log`), phạm vi sẽ là trong tháng 11 và tìm các lệnh `wget`/`curl`
+- Sau đó mình phát hiện thấy một loạt log chưa các chuỗi base64 rất bất thường
+
+<img width="1905" height="816" alt="image" src="https://github.com/user-attachments/assets/413bc17f-76cd-4cf2-9270-9e17e04b2787" />
+
+- URL này có IP là 116.203.212.184 và được truy cập nhiều lần thông qua lệnh curl
+- Sau đó mình tiến hành giải mã các chuỗi base64 này trên CyberChef thì phát hiện ra một file hết sức đáng ngờ ` .install`
+
+<img width="965" height="527" alt="image" src="https://github.com/user-attachments/assets/cc608303-0dd9-4169-a996-710eead871c7" />
+
+- Mình tiếp tục giải mã chuỗi base64 từ output thứ nhất và phát hiện một Script bao gồm ` rm -rf .install ` có tác dụng xóa đệ quy một tệp  có tên .install khỏi hệ thống trùng hợp với yêu cầu của đề bài
+
+<img width="972" height="487" alt="image" src="https://github.com/user-attachments/assets/80cbeef2-e005-4af3-a148-239bd14c478b" />
+
+** Đáp án: ** `.install`
+
+### Câu 9: The attacker downloaded SH scripts. What are the names of these files?
+
+- Từ yêu cầu của đề bài thì mình tiếp tục tìm trong nhật kí lỗi apache bằng từ khóa ` .sh ` và phát hiện một số file sh được tải từ các lệnh `wget ` và `curl` để lấy các script shell từ các máy chủ từ xa
+
+<img width="1336" height="633" alt="image" src="https://github.com/user-attachments/assets/1095d993-6208-4100-a0eb-2eaa285d1342" />
+
+** Đáp án: ** `0_cron.sh,0_linux.sh, ap.sh`
