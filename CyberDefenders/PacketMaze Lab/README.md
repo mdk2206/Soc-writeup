@@ -19,7 +19,7 @@ Nhiệm vụ của mình là đóng vai chuyên viên phân tích: điều tra c
 
 <img width="1916" height="538" alt="image" src="https://github.com/user-attachments/assets/3d4bfa00-e6a0-49fa-b4e6-abb615faa996" />
 
-- Kết quả mình thấy được IPv6 của máy chủ DNS là `fe80::c80b:adff:fead:20ba`
+- Kết quả mình thấy được IPv6 của máy chủ DNS là `fe80::c80b:adff:feaa:1db7`
 
 ### Q3: What domain is the user looking up in packet 15174?
 
